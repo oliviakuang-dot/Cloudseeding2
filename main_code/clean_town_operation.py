@@ -54,33 +54,13 @@ operation_2020_gdf = gpd.GeoDataFrame(
     crs="EPSG:4326"  # Set the Coordinate Reference System (CRS)
 )
 joined_2020 = gpd.sjoin(operation_2020_gdf, townshape, how="left", predicate="within")
-# Temporary diagnostic: inspect spatial-join results
-print("2020 input rows:", len(operation_2020_gdf))
-print("2020 joined rows:", len(joined_2020))
-print("2020 unmatched rows:", joined_2020["index_right"].isna().sum())
 
-multiple_2020 = joined_2020[
-    joined_2020.index.duplicated(keep=False)
-]
-
-print("2020 rows involved in multiple matches:", len(multiple_2020))
-
-if not multiple_2020.empty:
-    print(
-        multiple_2020[
-            [
-                "lon",
-                "lat",
-                "city_o",
-                "county_o",
-                "city",
-                "county",
-                "town",
-                "index_right",
-            ]
-        ].sort_index()
-    )
-
+# Flag whether each operation falls within a township polygon
+joined_2020["town_match_status"] = "matched_within"
+joined_2020.loc[
+    joined_2020["index_right"].isna(),
+    "town_match_status",
+] = "unmatched"
 
 ### Clean 2021-2025 Cloudseeding Operation Data
 
@@ -104,42 +84,40 @@ for i in range(2021,2026):
         crs="EPSG:4326"  # Set the Coordinate Reference System (CRS)
     )
     joined = gpd.sjoin(operation_gdf, townshape, how="left", predicate="within")
-    # Temporary diagnostics
-    print(f"{i} input rows:", len(operation_gdf))
-    print(f"{i} joined rows:", len(joined))
-    print(
-        f"{i} unmatched rows:",
-        joined["index_right"].isna().sum(),
-    )
 
-    multiple = joined[
-        joined.index.duplicated(keep=False)
-    ]
-
-    print(
-        f"{i} rows involved in multiple matches:",
-        len(multiple),
-    )
-
-    if not multiple.empty:
-        print(
-            multiple[
-                [
-                    "lon",
-                    "lat",
-                    "city_o",
-                    "county_o",
-                    "city",
-                    "county",
-                    "town",
-                    "index_right",
-                ]
-            ].sort_index()
-        )    
+    joined["town_match_status"] = "matched_within"
+    joined.loc[
+        joined["index_right"].isna(),
+        "town_match_status",
+    ] = "unmatched"
     data_list_2021_2025.append(joined)
 
 joined_2021_2025 = pd.concat(data_list_2021_2025, ignore_index=True)
 data = pd.concat([joined_2021_2025, joined_2020], ignore_index=True)
+
+# Inspect operations that did not match a township polygon
+if check == "True":
+    unmatched_records = data.loc[
+        data["town_match_status"] == "unmatched",
+        [
+            "date",
+            "lon",
+            "lat",
+            "city_o",
+            "county_o",
+            "city",
+            "county",
+            "town",
+        ],
+    ]
+
+    print(unmatched_records)
+    print("Unmatched operations:", len(unmatched_records))
+    # Save the unmatched records to a separate csv file for further review
+    unmatched_records.to_csv(
+        f"{data_dir}/check/unmatched_operations.csv",
+        index=False,
+    )
 
 # Create date columns
 data['date'] = pd.to_datetime(data['date'])
@@ -164,4 +142,4 @@ if check == "True":
     plt.savefig(f"{data_dir}/operation/operation_by_year.png", dpi=150)
     plt.close()
 
-# data.to_csv(f"{data_dir}/intermediate/cleaned_operation.csv")
+data.to_csv(f"{data_dir}/intermediate/cleaned_operation.csv")
