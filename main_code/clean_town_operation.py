@@ -90,7 +90,7 @@ data.drop(columns=['index_right'],inplace=True)
 
 # Test by drawing histogram
 if check == "True":
-    data_temp = data
+    data_temp = data.copy()
     data_temp['year'] = data_temp.date.dt.year
     year_counts = data_temp['year'].value_counts().sort_index()
 
