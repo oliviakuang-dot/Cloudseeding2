@@ -157,6 +157,17 @@ if check == "True":
     print("County matches:", county_comparable.sum() - len(county_mismatches))
     print("County mismatches:", len(county_mismatches))
 
+    mismatch_records = data.loc[
+        data.index.isin(city_mismatches.index)
+        | data.index.isin(county_mismatches.index)
+    ].copy()
+
+    # Save the mismatched records to a separate csv file for further review
+    mismatch_records.to_csv(
+        f"{data_dir}/check/location_mismatches.csv",
+        index=False,
+    )
+   
 # Create date columns
 data['date'] = pd.to_datetime(data['date'])
 
