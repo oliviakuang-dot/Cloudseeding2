@@ -119,6 +119,44 @@ if check == "True":
         index=False,
     )
 
+# Inspect whether reported and coordinate-derived locations agree
+if check == "True":
+    matched = data.loc[
+        data["town_match_status"] == "matched_within"
+    ].copy()
+
+    city_comparable = (
+        matched["city_o"].notna()
+        & matched["city"].notna()
+    )
+    county_comparable = (
+        matched["county_o"].notna()
+        & matched["county"].notna()
+    )
+
+    city_mismatches = matched.loc[
+        city_comparable
+        & matched["city_o"].astype(str).str.strip().ne(
+            matched["city"].astype(str).str.strip()
+        )
+    ]
+
+    county_mismatches = matched.loc[
+        county_comparable
+        & matched["county_o"].astype(str).str.strip().ne(
+            matched["county"].astype(str).str.strip()
+        )
+    ]
+    # Comparable means both reported and derived names are present, but they may or may not match.
+    # Mismatches mean both names are present but do not match.
+    print("Comparable city records:", city_comparable.sum())
+    print("City matches:", city_comparable.sum() - len(city_mismatches))
+    print("City mismatches:", len(city_mismatches))
+
+    print("Comparable county records:", county_comparable.sum())
+    print("County matches:", county_comparable.sum() - len(county_mismatches))
+    print("County mismatches:", len(county_mismatches))
+
 # Create date columns
 data['date'] = pd.to_datetime(data['date'])
 
