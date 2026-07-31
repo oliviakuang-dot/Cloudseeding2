@@ -180,4 +180,4 @@ if check == "True":
     plt.savefig(f"{data_dir}/operation/operation_by_year.png", dpi=150)
     plt.close()
 
-data.to_csv(f"{data_dir}/intermediate/cleaned_operation.csv")
+data.to_csv(f"{data_dir}/intermediate/cleaned_operation.csv", index=False)
