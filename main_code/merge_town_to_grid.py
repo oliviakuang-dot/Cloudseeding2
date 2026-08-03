@@ -79,7 +79,10 @@ df.to_csv(f"{data_dir}/intermediate/jx_grid.csv", index=False)
 
 operation_data = pd.read_csv(f"{data_dir}/intermediate/cleaned_operation.csv")
 
-# Correct one mistake in the data
+# Correct a known longitude/latitude swap before assigning grid cells.
+# Note: the township spatial join was already completed in clean_town_operation.py. 
+# Therefore, this correction updates only the coordinates used for grid assignment. 
+# The previously joined city, county, and town values in cleaned_operation.csv remain unmatched.
 condition = (operation_data['date'] == "2022-10-27") & (operation_data['start_time'] == "09:42") & (operation_data['city_o'] == "九江市")
 operation_data.loc[condition, 'lon'] = 115.56
 operation_data.loc[condition, 'lat'] = 29.043
