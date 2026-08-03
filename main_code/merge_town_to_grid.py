@@ -1,8 +1,8 @@
 # Author: Anora Wu
 # Date: Jan 7th 2026
-# Construct a panel data, with each day between 2020-2025 being the time variable and each grid being the identity. 
+# Construct a panel data, with each hour between 2020-2025 being the time variable and each grid being the identity. 
 # Each identity has a geometry and a id. 
-# Fill in the cloud seeding operation day and location into the time slots and the grid 
+# Fill in the cloud seeding operation hour and location into the time slots and the grid 
 
 import geopandas as gpd
 import pandas as pd
@@ -112,7 +112,7 @@ operation_data['cell_id'] = (
 valid_cells = set(jx_grid['cell_id'])
 operation_data = operation_data[operation_data['cell_id'].isin(valid_cells)]
 
-# If True, check the cell id as well as spacial distribution of operations
+# If True, check the cell id as well as spatial distribution of operations
 if check == "True":
 
     # Check the cell id by using sjoin to find id 
