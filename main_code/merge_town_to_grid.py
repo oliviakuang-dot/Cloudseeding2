@@ -134,37 +134,54 @@ if check == "True":
     plt.close()
 
 
-# Construct two operation data set - one using start time and one using end time
-# Use start time as operation time
-operation_data_start = operation_data.copy()
-operation_data_start['time'] = pd.to_datetime(
-    operation_data_start['date'].astype(str) + ' ' +
-    operation_data_start['start_time'].astype(str), format='mixed' 
+# Create exact start and end timestamps
+operation_data["start_dt"] = pd.to_datetime(
+    operation_data["date"].astype(str)
+    + " "
+    + operation_data["start_time"].astype(str),
+    format="mixed",
 )
-operation_data_start['time'] = operation_data_start['time'].dt.floor('h')
 
-# Use end time as operation time
+operation_data["end_dt"] = pd.to_datetime(
+    operation_data["date"].astype(str)
+    + " "
+    + operation_data["end_time"].astype(str),
+    format="mixed",
+)
+
 # Need to tackle cases such that operation starts at night and ends in the next day
-operation_data_end = operation_data.copy()
+# Assume the operation crossed midnight when its end time is before its start time
+crosses_midnight = operation_data["end_dt"] < operation_data["start_dt"]
+operation_data.loc[crosses_midnight, "end_dt"] += pd.Timedelta(days=1)
 
-# If end_time is earlier than start_time, the operation likely crossed midnight
-operation_data_end['start_dt'] = pd.to_datetime(
-    operation_data_end['date'].astype(str) + ' ' +
-    operation_data_end['start_time'].astype(str), format='mixed'
+# Create hourly timestamps for the hourly grid panel
+operation_data["start_hour"] = operation_data["start_dt"].dt.floor("h")
+operation_data["end_hour"] = operation_data["end_dt"].dt.floor("h")
+
+# Count operation starts by hour and grid cell
+op_counts_start = (
+    operation_data.groupby(["start_hour", "cell_id"])
+    .size()
+    .reset_index(name="op_count_start")
+    .rename(columns={"start_hour": "time"})
 )
-operation_data_end['end_dt'] = pd.to_datetime(
-    operation_data_end['date'].astype(str) + ' ' +
-    operation_data_end['end_time'].astype(str), format='mixed'
+
+# Count operation ends by hour and grid cell
+op_counts_end = (
+    operation_data.groupby(["end_hour", "cell_id"])
+    .size()
+    .reset_index(name="op_count_end")
+    .rename(columns={"end_hour": "time"})
 )
+# Rename start_hour and end_hour to time after aggregation so both count datasets
+# remain compatible with the existing yearly panel merges on time and cell_id.
 
-# Add a day when end is before start
-crosses_midnight = operation_data_end['end_dt'] < operation_data_end['start_dt']
-operation_data_end.loc[crosses_midnight, 'end_dt'] += pd.Timedelta(days=1)
-operation_data_end['time'] = operation_data_end['end_dt'].dt.floor('h')
-
-# Count operation times
-op_counts_end = operation_data_end.groupby(['time','cell_id']).size().reset_index(name='op_count_end')
-op_counts_start = operation_data_start.groupby(['time','cell_id']).size().reset_index(name='op_count_start')
+# Save exact operation timestamps before hourly aggregation.
+# The yearly grid panels constructed below use start_hour and end_hour, while this file preserves minute-level information.
+operation_data.to_csv(
+    f"{data_dir}/intermediate/operation_with_exact_times.csv",
+    index=False,
+)
 
 # Construct panel by year - a dataset of 6 years in total would be too large to be efficient
 for which_year in range(2020,2026):
