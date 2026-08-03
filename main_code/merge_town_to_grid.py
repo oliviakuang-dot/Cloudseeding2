@@ -106,7 +106,9 @@ operation_data['cell_id'] = (
     operation_data['cell_x'].astype(int).astype(str)
 )
 
-# Filtering out invalid entries (operation outside JX)
+# Keep operations assigned to grid cells that overlap Jiangxi.
+# Note: a point in a boundary cell may itself be outside Jiangxi, 
+# so this does not guarantee that every operation lies within the Jiangxi boundary.
 valid_cells = set(jx_grid['cell_id'])
 operation_data = operation_data[operation_data['cell_id'].isin(valid_cells)]
 
