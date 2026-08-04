@@ -62,6 +62,29 @@ joined_2020.loc[
     "town_match_status",
 ] = "unmatched"
 
+# Define a function to check for multiple matches
+def check_for_multiple_matches(operation_gdf, joined, year):
+    if len(joined) != len(operation_gdf):
+        multiple_matches = joined.loc[
+            joined.index.duplicated(keep=False)
+        ]
+
+        print(f"{year} operations with multiple township matches:")
+        print(multiple_matches)
+
+        raise ValueError(
+            f"{year} spatial join changed the row count "
+            f"from {len(operation_gdf)} to {len(joined)}."
+        )
+
+# Check for multiple matches in 2020 data
+if check == "True":
+    check_for_multiple_matches(
+        operation_2020_gdf,
+        joined_2020,
+        2020,
+    )   
+
 ### Clean 2021-2025 Cloudseeding Operation Data
 
 data_list_2021_2025 = []
@@ -85,6 +108,15 @@ for i in range(2021,2026):
     )
     joined = gpd.sjoin(operation_gdf, townshape, how="left", predicate="within")
 
+    # Check for multiple matches in 2021-2025
+    if check == "True":
+        check_for_multiple_matches(
+            operation_gdf,
+            joined,
+            i,
+        )
+
+    # Define a new column to indicate whether each operation falls within a township polygon
     joined["town_match_status"] = "matched_within"
     joined.loc[
         joined["index_right"].isna(),
