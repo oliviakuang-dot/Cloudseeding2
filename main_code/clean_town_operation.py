@@ -8,6 +8,21 @@ import os
 data_dir = os.environ['DATA_DIR']
 check = os.environ['CHECK']
 
+# Define helper to check whether a spatial join produces multiple matches
+def check_for_multiple_matches(operation_gdf, joined, year):
+    if len(joined) != len(operation_gdf):
+        multiple_matches = joined.loc[
+            joined.index.duplicated(keep=False)
+        ]
+
+        print(f"{year} operations with multiple township matches:")
+        print(multiple_matches)
+
+        raise ValueError(
+            f"{year} spatial join changed the row count "
+            f"from {len(operation_gdf)} to {len(joined)}."
+        )
+    
 ### Clean Township Shapefile
 
 # Load data
@@ -55,35 +70,20 @@ operation_2020_gdf = gpd.GeoDataFrame(
 )
 joined_2020 = gpd.sjoin(operation_2020_gdf, townshape, how="left", predicate="within")
 
-# Flag whether each operation falls within a township polygon
-joined_2020["town_match_status"] = "matched_within"
-joined_2020.loc[
-    joined_2020["index_right"].isna(),
-    "town_match_status",
-] = "unmatched"
-
-# Define a function to check for multiple matches
-def check_for_multiple_matches(operation_gdf, joined, year):
-    if len(joined) != len(operation_gdf):
-        multiple_matches = joined.loc[
-            joined.index.duplicated(keep=False)
-        ]
-
-        print(f"{year} operations with multiple township matches:")
-        print(multiple_matches)
-
-        raise ValueError(
-            f"{year} spatial join changed the row count "
-            f"from {len(operation_gdf)} to {len(joined)}."
-        )
-
-# Check for multiple matches in 2020 data
+# Check for multiple matches in 2020 
 if check == "True":
     check_for_multiple_matches(
         operation_2020_gdf,
         joined_2020,
         2020,
     )   
+
+# Flag whether each operation matched a township polygon
+joined_2020["town_match_status"] = "matched_within"
+joined_2020.loc[
+    joined_2020["index_right"].isna(),
+    "town_match_status",
+] = "unmatched"
 
 ### Clean 2021-2025 Cloudseeding Operation Data
 
@@ -116,16 +116,19 @@ for i in range(2021,2026):
             i,
         )
 
-    # Define a new column to indicate whether each operation falls within a township polygon
+    # Flag whether each operation matched a township polygon
     joined["town_match_status"] = "matched_within"
     joined.loc[
         joined["index_right"].isna(),
         "town_match_status",
     ] = "unmatched"
+
     data_list_2021_2025.append(joined)
 
 joined_2021_2025 = pd.concat(data_list_2021_2025, ignore_index=True)
 data = pd.concat([joined_2021_2025, joined_2020], ignore_index=True)
+
+### Check Cleaned Operation Data
 
 # Inspect operations that did not match a township polygon
 if check == "True":
@@ -145,6 +148,7 @@ if check == "True":
 
     print(unmatched_records)
     print("Unmatched operations:", len(unmatched_records))
+
     # Save the unmatched records to a separate csv file for further review
     unmatched_records.to_csv(
         f"{data_dir}/check/unmatched_operations.csv",
@@ -206,7 +210,7 @@ data['date'] = pd.to_datetime(data['date'])
 # Drop index column
 data.drop(columns=['index_right'],inplace=True)
 
-# Test by drawing histogram
+# Check the yearly distribution of operations
 if check == "True":
     data_temp = data.copy()
     data_temp['year'] = data_temp.date.dt.year
