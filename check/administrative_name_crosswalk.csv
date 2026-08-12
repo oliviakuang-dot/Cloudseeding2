@@ -1,0 +1,12 @@
+old_name,current_name,change_year,change_type,same_area_for_qa,direct_mismatch_records,notes,source_url
+上饶县,广信区,2019,county_to_district,yes,171,The former county became Guangxin District using the former county's administrative area.,https://www.xzqh.org/show/china/2019/36/361104.html
+赣县,赣县区,2016,county_to_district,yes,138,The former county became Ganxian District.,https://www.zgq.gov.cn/zgqxxgk/lylm/202402/b42183669ea34635acd412725dfe1a12.shtml
+广丰县,广丰区,2015,county_to_district,yes,75,The former county became Guangfeng District using the former county's administrative area.,https://zh.wikisource.org/wiki/国务院关于同意江西省调整上饶市部分行政区划的批复_(2015年)
+九江县,柴桑区,2017,county_to_district,yes,70,The former county became Chaisang District.,https://www.jiujiang.gov.cn/fdzdxxgk/10/zfgb_1/2022/2022nd4q/szfwj_205475/202511/t20251105_7050095.html
+东乡县,东乡区,2016,county_to_district,yes,87,The former county became Dongxiang District using the former county's administrative area.,https://www.xzqh.org/show/china/36/361003.html
+新建县,新建区,2015,county_to_district,yes,62,The former county became Xinjian District using the former county's administrative area.,https://xjq.nc.gov.cn/xjqrmzf/xzqh/list_tt.shtml
+余江县,余江区,2018,county_to_district,yes,58,The former county became Yujiang District.,https://www.xzqh.org/show/china/36/360603.html
+庐山区,濂溪区,2016,district_rename,mostly,21,Lushan District was renamed Lianxi District as part of the 2016 Jiujiang reorganization; some territory was transferred to the new Lushan City.,https://www.xinhuanet.com/politics/2016-05/12/c_128978745.htm
+星子县,庐山市,2016,county_to_county_level_city,no,80,Lushan City includes the former Xingzi County plus transferred territory; use this pair for review but not automatic name equivalence.,https://www.lushan.gov.cn/yxls/lsyg_194877/
+湾里区,新建区,2019,district_abolished_and_merged,review,170,Wanli District was abolished and its area merged into Xinjian District; the Wanli Management Bureau name remains in use and these rows should be reviewed rather than automatically accepted.,https://wl.nc.gov.cn/ncswlglj/gkgsgg/202509/b19f9eec1ae94d15a9cbfc589fd692f6/files/2025年南昌市湾里管理局太平镇枫林村农村道路建设项目规划选址论证报告(评审后修改)9.4.pdf
+龙南县,龙南市,2020,county_to_county_level_city,yes,3,Longnan County became the county-level city of Longnan.,https://www.ganzhou.gov.cn/gzszf/c100146/201206/1aefe7f1456a4f52aca1fdc2290456ef.shtml
