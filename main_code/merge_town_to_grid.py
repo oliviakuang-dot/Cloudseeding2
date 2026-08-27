@@ -87,6 +87,80 @@ condition = (operation_data['date'] == "2022-10-27") & (operation_data['start_ti
 operation_data.loc[condition, 'lon'] = 115.56
 operation_data.loc[condition, 'lat'] = 29.043
 
+# Identify distant mismatches using the manually reviewed case files.
+review_files = [
+    f"{data_dir}/check/cross_city_location_review.csv",
+    f"{data_dir}/check/cross_county_same_city_review.csv",
+]
+
+mismatch_reviews = pd.concat(
+    [pd.read_csv(path) for path in review_files],
+    ignore_index=True,
+)
+
+# "Distant mismatches" includes both distant location conflicts and
+# suspected coordinate issues (cases that contains a detailed site name supporting the reported location).
+distant_cases = mismatch_reviews.loc[
+    mismatch_reviews["review_status"].isin(
+        ["distant_location_conflict", "suspected_coordinate_issue"]
+    )
+].copy()
+
+# Some reviewed cases combine multiple reported-county labels with "|".
+distant_cases["reported_county"] = (
+    distant_cases["reported_county"]
+    .astype("string")
+    .str.split(r"\s*\|\s*")
+)
+distant_cases = distant_cases.explode("reported_county")
+
+# Construct stable matching keys.
+operation_data["_lon_key"] = operation_data["lon"].round(6)
+operation_data["_lat_key"] = operation_data["lat"].round(6)
+operation_data["_city_key"] = operation_data["city_o"].astype("string").str.strip()
+operation_data["_county_key"] = operation_data["county_o"].astype("string").str.strip()
+
+distant_cases["_lon_key"] = distant_cases["lon"].round(6)
+distant_cases["_lat_key"] = distant_cases["lat"].round(6)
+distant_cases["_city_key"] = (
+    distant_cases["reported_city"].astype("string").str.strip()
+)
+distant_cases["_county_key"] = (
+    distant_cases["reported_county"].astype("string").str.strip()
+)
+
+match_columns = [
+    "_lon_key",
+    "_lat_key",
+    "_city_key",
+    "_county_key",
+]
+
+distant_case_lookup = (
+    distant_cases[match_columns]
+    .drop_duplicates()
+    .assign(is_distant_mismatch=True)
+)
+
+operation_data = operation_data.merge(
+    distant_case_lookup,
+    on=match_columns,
+    how="left",
+    validate="many_to_one",
+)
+
+operation_data["is_distant_mismatch"] = (
+    operation_data["is_distant_mismatch"].eq(True)
+)
+
+# Confirm that the reviewed classification still matches 187 source records.
+distant_count = int(operation_data["is_distant_mismatch"].sum())
+if distant_count != 187:
+    raise ValueError(
+        f"Expected 187 distant mismatch records, but matched {distant_count}. "
+        "The source data or review files may have changed."
+    )
+
 # Transfer lat and lon to EPSG:32650
 # "always_xy=True" ensures using the traditional GIS order, 
 # that is longitude, latitude for EPSG:4326 and easting, northing for EPSG:32650
@@ -111,6 +185,30 @@ operation_data['cell_id'] = (
 # so this does not guarantee that every operation lies within the Jiangxi boundary.
 valid_cells = set(jx_grid['cell_id'])
 operation_data = operation_data[operation_data['cell_id'].isin(valid_cells)]
+
+# Drop distant mismatches from the main sample.
+distant_in_valid_cells = int(operation_data["is_distant_mismatch"].sum())
+operation_data = operation_data.loc[
+    ~operation_data["is_distant_mismatch"]
+].copy()
+
+# Remove temporary matching fields but retain the audit flag.
+operation_data.drop(
+    columns=["_lon_key", "_lat_key", "_city_key", "_county_key"],
+    inplace=True,
+)
+
+print(
+    f"Dropped {distant_in_valid_cells} distant mismatch records; "
+    f"{len(operation_data)} operation records remain."
+)
+
+# Save the final operation sample after the coordinate correction,
+# valid-grid restriction, and distant-mismatch exclusion.
+operation_data.to_csv(
+    f"{data_dir}/intermediate/final_operation_sample.csv",
+    index=False,
+)
 
 # If True, check the cell id as well as spatial distribution of operations
 if check == "True":
